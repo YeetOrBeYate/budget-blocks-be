@@ -32,9 +32,10 @@ server.use(
 
 server.use("/api/auth", authRouter);
 server.use("/api/users", userRouter);
+//make sure this endpoint it handled by its own router
 server.use("/plaid/webhook", webhookRouter);
 server.use("/plaid", authenticate, plaidRouter);
-server.use('/manual/', manualRouter);
+server.use('/manual', manualRouter);
 
 server.use("/", (req, res) => {
   res.send({ message: "API is up and running..." });
