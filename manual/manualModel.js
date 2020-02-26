@@ -59,7 +59,7 @@ const MANUAL_get_categories = Userid => {
               try{
                 const trans = await MANUAL_get_cat_transactions(cat.id, Userid);
                 const amount = await MANUAL_get_amount_by_category(cat.id, Userid);
-                if (trans.length > 0) {
+                if (cat.budget != null) {
                   return { ...cat, transactions: trans, total: amount.total };
                 }
               }catch(err){
@@ -95,6 +95,61 @@ const insert_categories = (body, userId)=>{
   })
 }
 
+const find_category_by_name = (body, userId)=>{
+  return db('db')
+  .select("*")
+  .from('category')
+  .where({name:body.name})
+  .first()
+  .then(async(category)=>{
+    try{
+      const link = await link_user_and_category(category.id, userId, body.budget)
+    }catch(err){
+      console.log(err)
+    }
+    return category.id
+  })
+  .catch(err=>{
+    console.log(err)
+  })
+}
+
+//reserved for the function below it
+
+const search_link=(catId, userId)=>{
+  return db('db')
+  .select('*')
+  .from('user_category')
+  .where({category_id:catId, user_id:userId})
+  .first()
+}
+
+const category_already_linked = (body, userId)=>{
+  return db('db')
+  .select("*")
+  .from('category')
+  .where({name:body.name})
+  .first()
+  .then(async category =>{
+    if(category){
+      try{
+        const linked = await search_link(category.id, userId)
+        if(linked){
+          return linked
+        }else{
+          return null
+        }
+      }catch(err){
+        console.log(err)
+        return null
+      }
+    }
+  })
+  .catch(err=>{
+    console.log(err)
+  })
+}
+
 const editCategoryBudget = (catid, userid, bud)=>{
   return db('user_category')
   .where({category_id:catid, user_id:userid})
@@ -118,7 +173,18 @@ const editCategory = (body, catId, userId)=>{
       return ids[0]
     }
   })
+}
 
+const deleteTransaction = (tranId)=>{
+  return db('manual_budget_item')
+  .where({id:tranId})
+  .del()
+}
+
+const deleteCategory = (catId)=>{
+  return db('category')
+  .where({id:catId})
+  .del()
 }
 
 module.exports = {
@@ -127,5 +193,9 @@ module.exports = {
     getAllTrans,
     MANUAL_get_categories,
     insert_categories,
-    editCategory
+    editCategory,
+    deleteTransaction,
+    deleteCategory,
+    find_category_by_name,
+    category_already_linked
 }
